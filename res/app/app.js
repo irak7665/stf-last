@@ -14,15 +14,20 @@ require.ensure([], function(require) {
     require('angular-hotkeys').name,
     require('./layout').name,
     require('./device-list').name,
+    require('./chat-data').name,
     require('./group-list').name,
     require('./control-panes').name,
+    require('./chat-data').name,
     require('./menu').name,
     require('./settings').name,
+    require('./system-settings').name,
     require('./docs').name,
     require('./user').name,
     require('./../common/lang').name,
     require('stf/standalone').name,
-    require('./group-list').name
+    require('./group-list').name,
+    require('./operate/contact').name,
+    require('./operate/stranger').name
   ])
     .config(function($routeProvider, $locationProvider) {
       $locationProvider.hashPrefix('!')

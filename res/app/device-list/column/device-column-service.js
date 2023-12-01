@@ -22,8 +22,30 @@ var filterOps = {
   }
 }
 
-module.exports = function DeviceColumnService($filter, gettext, SettingsService, AppState) {
+module.exports = function DeviceColumnService($filter, gettext, SettingsService, AppState, DeviceService, $http) {
   // Definitions for all possible values.
+  function setRunStatus(device) {
+    let apiMethod = ''
+    if(device.runningState === 0) {
+      apiMethod = 'start_send_message'
+    }else if(device.runningState === 2) {
+      apiMethod = 'pause'
+    } else {
+      apiMethod = 'stop'
+    }
+    $http({
+      method: 'POST'
+      , url: 'http://192.168.1.102:5000/' + apiMethod
+      , data: {
+        serial: device.serial
+      }
+    }).then(function successCallback(response) {
+      if(response.data.status === 'ok') {
+        DeviceService.updateRunningSstate(device.serial, device.runningState)
+      }
+    })
+
+  }
   return {
     state: DeviceStatusCell({
       title: gettext('Status')
@@ -65,6 +87,19 @@ module.exports = function DeviceColumnService($filter, gettext, SettingsService,
         return $filter('date')(device.group.lifeTime.start, SettingsService.get('dateFormat'))
       }
     })
+  , notes: DeviceNoteCell({
+      title: gettext('Notes')
+      , value: function(device) {
+        return device.notes || ''
+      }
+    })
+  , tips: ColorTextCell({
+      title: gettext('Tips')
+      , value: function(device) {
+        return device.runningTips || 'stoped'
+      },
+      colorClass: 'tips'
+    })
   , groupRepetitions: TextCell({
       title: gettext('Group Repetitions')
     , value: function(device) {
@@ -89,7 +124,84 @@ module.exports = function DeviceColumnService($filter, gettext, SettingsService,
         return device.name || device.model || device.serial
       }
     }, AppState.user.email)
-  , operator: TextCell({
+  , run: RunCell({
+      title: gettext('Run Status')
+    , value: function(device) {
+      let translatedStatus
+      switch (device.runningState) {
+        case 0:
+          translatedStatus = $filter('translate')('Running')
+          break
+        case 2:
+          translatedStatus = $filter('translate')('Run Status')
+          break
+        case 1:
+          translatedStatus = $filter('translate')('Run Status')
+          break
+        default:
+          translatedStatus = $filter('translate')('Run Status')
+      }
+      return translatedStatus
+      },
+      setRunStatus: setRunStatus
+    })
+  , suspend: SuspendCell({
+      title: gettext('Suspend')
+    , value: function(device) {
+      let translatedStatus
+      switch (device.runningState) {
+        case 0:
+          translatedStatus = $filter('translate')('Suspend')
+          break
+        case 2:
+          translatedStatus = $filter('translate')('Paused')
+          break
+        case 1:
+          translatedStatus = $filter('translate')('Suspend')
+          break
+        default:
+          translatedStatus = $filter('translate')('Suspend')
+      }
+      return translatedStatus
+      },
+      setRunStatus: setRunStatus
+    })
+  , stop: StopCell({
+      title: gettext('Stop Status')
+    , value: function(device) {
+      return $filter('translate')('Stop Status')
+      },
+      setRunStatus: setRunStatus
+    })
+  ,
+    deviceSetting: DevicesettingCell({
+      title: 'deviceSetting'
+      , target: '_self'
+      , value: function() {
+        return $filter('translate')('deviceSetting')
+      }
+      , link: function(device) {
+        return device.serial
+      }
+    })
+  , setContact: ContactCell({
+      title: gettext('SetContact')
+    , target: '_self'
+    , value: function() {
+        return $filter('translate')('SetContact')
+      }
+    , link: function(device) {
+        return device.serial
+      }
+    })
+    , setStranger: StrangerCell({
+        title: gettext('SetStranger')
+      , target: '_self'
+      , value: function() {
+          return $filter('translate')('SetStranger')
+        }
+      })
+   , operator: TextCell({
       title: gettext('Carrier')
     , value: function(device) {
         return device.operator || ''
@@ -337,12 +449,7 @@ module.exports = function DeviceColumnService($filter, gettext, SettingsService,
         return device.provider ? device.provider.name : ''
       }
     })
-  , notes: DeviceNoteCell({
-      title: gettext('Notes')
-    , value: function(device) {
-        return device.notes || ''
-      }
-    })
+
   , owner: LinkCell({
       title: gettext('User')
     , target: '_blank'
@@ -409,6 +516,41 @@ function TextCell(options) {
       return compareIgnoreCase(options.value(a), options.value(b))
     }
   , filter: function(item, filter) {
+      return filterIgnoreCase(options.value(item), filter.query)
+    }
+  })
+}
+function ColorTextCell(options) {
+  return _.defaults(options, {
+    title: options.title
+    , defaultOrder: 'asc'
+    , build: function() {
+      var td = document.createElement('td')
+      td.appendChild(document.createTextNode(''))
+
+      return td
+    }
+    , update: function(td, item) {
+      var t = td.firstChild
+      if (options.value(item) === 'stoped') {
+        t.nodeValue = options.value(item)
+        td.style.color = 'blue'
+      } else if (options.value(item) === 'already running') {
+        t.nodeValue = options.value(item)
+        td.style.color = 'green'
+      } else if (options.value(item) === 'error') {
+        t.nodeValue = '卧槽，封号了'
+        td.style.color = 'red'
+      } else {
+        t.nodeValue = options.value(item)
+      }
+
+      return td
+    }
+    , compare: function(a, b) {
+      return compareIgnoreCase(options.value(a), options.value(b))
+    }
+    , filter: function(item, filter) {
       return filterIgnoreCase(options.value(item), filter.query)
     }
   })
@@ -518,6 +660,86 @@ function LinkCell(options) {
       return compareIgnoreCase(options.value(a), options.value(b))
     }
   , filter: function(item, filter) {
+      return filterIgnoreCase(options.value(item), filter.query)
+    }
+  })
+}
+
+function ContactCell(options) {
+  return _.defaults(options, {
+    title: options.title
+  , defaultOrder: 'asc'
+  , build: function() {
+      var td = document.createElement('td')
+      var a = document.createElement('a')
+      a.appendChild(document.createTextNode(''))
+      td.appendChild(a)
+      return td
+    }
+  , update: function(td, device) {
+      var a = td.firstChild
+      var t = a.firstChild
+      a.setAttribute('href', '#!/contact/' + device.serial)
+      t.nodeValue = options.value(device)
+      return td
+    }
+  , compare: function(a, b) {
+      return compareIgnoreCase(options.value(a), options.value(b))
+    }
+  , filter: function(item, filter) {
+      return filterIgnoreCase(options.value(item), filter.query)
+    }
+  })
+}
+
+function StrangerCell(options) {
+  return _.defaults(options, {
+    title: options.title
+  , defaultOrder: 'asc'
+  , build: function() {
+      var td = document.createElement('td')
+      var a = document.createElement('a')
+      a.appendChild(document.createTextNode(''))
+      td.appendChild(a)
+      return td
+    }
+  , update: function(td, device) {
+      var a = td.firstChild
+      var t = a.firstChild
+      a.setAttribute('href', '#!/stranger/' + device.serial)
+      t.nodeValue = options.value(device)
+      return td
+    }
+  , compare: function(a, b) {
+      return compareIgnoreCase(options.value(a), options.value(b))
+    }
+  , filter: function(item, filter) {
+      return filterIgnoreCase(options.value(item), filter.query)
+    }
+  })
+}
+function DevicesettingCell(options) {
+  return _.defaults(options, {
+    title: options.title
+    , defaultOrder: 'asc'
+    , build: function() {
+      let td = document.createElement('td')
+      let a = document.createElement('a')
+      a.appendChild(document.createTextNode(''))
+      td.appendChild(a)
+      return td
+    }
+    , update: function(td, device) {
+      let a = td.firstChild
+      let t = a.firstChild
+      a.setAttribute('href', '#!/deviceSetting/' + device.serial)
+      t.nodeValue = options.value(device)
+      return td
+    }
+    , compare: function(a, b) {
+      return compareIgnoreCase(options.value(a), options.value(b))
+    }
+    , filter: function(item, filter) {
       return filterIgnoreCase(options.value(item), filter.query)
     }
   })
@@ -705,6 +927,189 @@ function DeviceStatusCell(options) {
       , offline: 70
       , present: 80
       , absent: 90
+      }
+      return function(deviceA, deviceB) {
+        return order[deviceA.state] - order[deviceB.state]
+      }
+    })()
+  , filter: function(device, filter) {
+      return device.state === filter.query
+    }
+  })
+}
+
+function RunCell(options) {
+  var stateClasses = {
+    running: 'state-running btn-primary'
+  , suspend: 'state-suspend btn-primary-outline'
+  , stop: 'state-stop btn-primary-outline'
+  }
+
+  return _.defaults(options, {
+    title: options.title
+  , defaultOrder: 'asc'
+  , build: function() {
+      var td = document.createElement('td')
+      var a = document.createElement('a')
+      a.appendChild(document.createTextNode(''))
+      td.appendChild(a)
+      return td
+    }
+  , update: function(td, device) {
+      var a = td.firstChild
+      var t = a.firstChild
+      var c
+      switch (device.runningState) {
+        case 0:
+          c = 'running'
+          break
+        case 2:
+          c = 'suspend'
+          break
+        case 1:
+          c = 'stop'
+          break
+        default:
+          c = 'stop'
+      }
+      a.className = 'btn btn-xs ' +
+        (stateClasses[c])
+      a.onclick = function() {
+        device.runningState = 0
+        options.setRunStatus(device)
+      }
+      t.nodeValue = options.value(device)
+      return td
+    }
+  , compare: (function() {
+      var order = {
+          running: 10
+        , suspend: 15
+        , stop: 20
+      }
+      return function(deviceA, deviceB) {
+        return order[deviceA.state] - order[deviceB.state]
+      }
+    })()
+  , filter: function(device, filter) {
+      return device.state === filter.query
+    }
+  })
+}
+
+function SuspendCell(options) {
+  var stateClasses = {
+    running: 'state-running btn-primary-outline'
+  , suspend: 'state-suspend btn-primary'
+  , stop: 'state-stop btn-primary-outline'
+  }
+
+  return _.defaults(options, {
+    title: options.title
+  , defaultOrder: 'asc'
+  , build: function() {
+      var td = document.createElement('td')
+      var a = document.createElement('a')
+      a.appendChild(document.createTextNode(''))
+      td.appendChild(a)
+      return td
+    }
+  , update: function(td, device) {
+      var a = td.firstChild
+      var t = a.firstChild
+      var c
+      switch (device.runningState) {
+        case 0:
+          c = 'running'
+          break
+        case 2:
+          c = 'suspend'
+          break
+        case 1:
+          c = 'stop'
+          break
+        default:
+          c = 'stop'
+      }
+      a.className = 'btn btn-xs' +
+        (stateClasses[c])
+      a.onclick = function() {
+        if (device.runningState !== 1) {
+          device.runningState = 2
+        }
+        options.setRunStatus(device)
+      }
+
+      t.nodeValue = options.value(device)
+
+      return td
+    }
+  , compare: (function() {
+      var order = {
+          running: 10
+        , suspend: 15
+        , stop: 20
+      }
+      return function(deviceA, deviceB) {
+        return order[deviceA.state] - order[deviceB.state]
+      }
+    })()
+  , filter: function(device, filter) {
+      return device.state === filter.query
+    }
+  })
+}
+
+function StopCell(options) {
+  var stateClasses = {
+    running: 'state-running btn-primary-outline'
+  , suspend: 'state-suspend btn-primary-outline'
+  , stop: 'state-stop btn-primary-outline'
+  }
+
+  return _.defaults(options, {
+    title: options.title
+  , defaultOrder: 'asc'
+  , build: function() {
+      var td = document.createElement('td')
+      var a = document.createElement('a')
+      a.appendChild(document.createTextNode(''))
+      td.appendChild(a)
+      return td
+    }
+  , update: function(td, device) {
+      var a = td.firstChild
+      var t = a.firstChild
+      var c
+      switch (device.runningState) {
+        case 0:
+          c = 'running'
+          break
+        case 2:
+          c = 'suspend'
+          break
+        case 1:
+          c = 'stop'
+          break
+        default:
+          c = 'stop'
+      }
+      a.className = 'btn btn-xs ' +
+        (stateClasses[c])
+        a.onclick = function() {
+          device.runningState = 1
+          options.setRunStatus(device)
+        }
+
+      t.nodeValue = options.value(device)
+
+      return td
+    }
+  , compare: (function() {
+      var order = {
+          running: 10
+        , suspend: 15
+        , stop: 20
       }
       return function(deviceA, deviceB) {
         return order[deviceA.state] - order[deviceB.state]

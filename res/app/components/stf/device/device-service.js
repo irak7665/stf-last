@@ -7,7 +7,7 @@ var _ = require('lodash')
 var EventEmitter = require('eventemitter3')
 let Promise = require('bluebird')
 
-module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceService, CommonService) {
+module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceService, CommonService, $timeout) {
   var deviceService = {}
 
   function Tracker($scope, options) {
@@ -218,9 +218,13 @@ module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceServi
 
     oboe(CommonService.getBaseUrl() + '/api/v1/devices')
       .node('devices[*]', function(device) {
-        tracker.add(device)
-      })
+          tracker.add(device)
+      }).done(function() {
 
+    })
+    // tracker.devices.forEach(function(device) {
+    //   device.runningState = 0
+    // })
     return tracker
   }
 
@@ -266,6 +270,13 @@ module.exports = function DeviceServiceFactory($http, socket, EnhanceDeviceServi
     socket.emit('device.note', {
       serial: serial,
       note: note
+    })
+  }
+
+  deviceService.updateRunningSstate = function(serial, runningState) {
+    socket.emit('device.updateRunningState', {
+      serial: serial,
+      runningState: runningState
     })
   }
 

@@ -13,6 +13,8 @@ module.exports = function DeviceListCtrl(
 , SettingsService
 , $location
 ) {
+  // $scope.tracker = DeviceService.trackAll($scope)
+
   $scope.tracker = DeviceService.trackAll($scope)
   $scope.control = ControlService.create($scope.tracker.devices, '*ALL')
 
@@ -27,8 +29,41 @@ module.exports = function DeviceListCtrl(
       name: 'model'
     , selected: true
     }
+    , {
+      name: 'notes'
+      , selected: true
+    }
+  , {
+    name: 'tips'
+  , selected: true
+
+    }
   , {
       name: 'name'
+    , selected: true
+    }
+  , {
+      name: 'run'
+    , selected: true
+    }
+  , {
+      name: 'suspend'
+    , selected: true
+    }
+  , {
+      name: 'stop'
+    , selected: true
+    }
+  , {
+      name: 'setContact'
+    , selected: true
+    }
+  , {
+      name: 'setStranger'
+    , selected: true
+    }
+  , {
+      name: 'deviceSetting'
     , selected: true
     }
   , {
@@ -123,10 +158,7 @@ module.exports = function DeviceListCtrl(
       name: 'provider'
     , selected: true
     }
-  , {
-      name: 'notes'
-    , selected: true
-    }
+
   , {
       name: 'owner'
     , selected: true
@@ -237,4 +269,6 @@ module.exports = function DeviceListCtrl(
     $scope.sort = defaultSort
     $scope.columns = defaultColumns
   }
+
+
 }
