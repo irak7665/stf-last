@@ -539,7 +539,7 @@ function ColorTextCell(options) {
         t.nodeValue = options.value(item)
         td.style.color = 'green'
       } else if (options.value(item) === 'error') {
-        t.nodeValue = '卧槽，封号了'
+        t.nodeValue = '故障，请检查机器'
         td.style.color = 'red'
       } else {
         t.nodeValue = options.value(item)

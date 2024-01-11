@@ -1,7 +1,7 @@
 module.exports = angular.module('stf.device-setting', [
 ])
   .config(['$routeProvider', function($routeProvider) {
-    $routeProvider.when('/deviceSetting', {
+    $routeProvider.when('/deviceSetting/:serial', {
       template: require('./device-setting.pug')
     })
   }])

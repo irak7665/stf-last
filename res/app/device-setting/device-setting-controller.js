@@ -6,22 +6,29 @@ module.exports = function DeviceSettingCtrl(
   $http
 ) {
 
-  $scope.defaultData = ''
+  $scope.defaultData = {
+    interval: '',
+    pagesize: '',
+    loop_message_time: '',
+    init_message: '',
+    add_contact_flag: false,
+    wait_message_time: '',
+    serial: $routeParams.serial
+    // globalApplication: false
+  }
 
   $scope.submitForm = function() {
-    var serial = $routeParams.serial
+    $scope.defaultData.serial = $routeParams.serial
+
     $http({
       method: 'POST',
       url: 'http://192.168.1.102:5000/device_setting',
-      data: {
-        init_message_list: $scope.defaultData,
-        serial: serial
-      }
+      data: $scope.defaultData
     }).then(function successCallback(res) {
     })
   }
   $http({
-    method: 'GET',
+    method: 'POST',
     url: 'http://192.168.1.102:5000/get_device_setting',
     data: {
       serial: $routeParams.serial

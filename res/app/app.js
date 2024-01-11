@@ -27,7 +27,8 @@ require.ensure([], function(require) {
     require('stf/standalone').name,
     require('./group-list').name,
     require('./operate/contact').name,
-    require('./operate/stranger').name
+    require('./operate/stranger').name,
+    require('./device-setting').name,
   ])
     .config(function($routeProvider, $locationProvider) {
       $locationProvider.hashPrefix('!')
