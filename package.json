@@ -89,7 +89,7 @@
     "semver": "^7.3.5",
     "serve-favicon": "^2.2.0",
     "serve-static": "^1.9.2",
-    "socket.io": "^2.0.3",
+    "socket.io": "^4.7.5",
     "split": "^1.0.0",
     "swagger-express-mw-node12": "^0.7.0",
     "swagger-router": "^0.7.4",
